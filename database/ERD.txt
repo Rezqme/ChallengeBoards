@@ -1,0 +1,308 @@
+==============================================================================
+Challenge Boards - Entity Relationship Diagram (ERD)
+==============================================================================
+
+Legend:
+  ──── One-to-Many relationship (1:N)
+  ═══ Many-to-Many relationship (M:N) via junction table
+  [PK] Primary Key
+  [FK] Foreign Key
+  (*) Required field
+  (?) Optional field
+
+==============================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CORE ENTITIES                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────┐
+│         Users            │
+├──────────────────────────┤
+│ [PK] UserId             │
+│ (*) Email               │
+│ (?) PasswordHash        │
+│ (*) FirstName           │
+│ (*) LastName            │
+│ (?) DisplayName         │
+│ (*) Role                │──┐
+│ (*) IsActive            │  │
+│ (*) DataSharingConsent  │  │
+│ (*) OngoingVisibility   │  │
+│ (?) LastSyncDate        │  │
+│ (*) CreatedAt           │  │
+│ (*) UpdatedAt           │  │
+└──────────────────────────┘  │
+       │                       │
+       │                       │ Created By
+       │                       │
+       │                  ┌────▼─────────────────────┐
+       │                  │      Challenges          │
+       │                  ├──────────────────────────┤
+       │                  │ [PK] ChallengeId        │
+       │                  │ (*) Name                │
+       │                  │ (?) Description         │
+       │                  │ (*) ChallengeType       │
+       │                  │ (*) StartDate           │
+       │                  │ (*) EndDate             │
+       │                  │ (?) SignupStartDate     │
+       │                  │ (?) SignupEndDate       │
+       │                  │ (*) TrackSteps          │
+       │                  │ (*) TrackActiveMinutes  │
+       │                  │ (*) TrackDistance       │
+       │                  │ (*) PrimaryMetric       │
+       │                  │ (*) ScoringMethod       │
+       │                  │ (?) TeamScoringMethod   │
+       │                  │ (?) TeamScoringTopN     │
+       │                  │ (?) MinTeamSize         │
+       │                  │ (?) MaxTeamSize         │
+       │                  │ (*) Status              │
+       │                  │ [FK] CreatedBy          │
+       │                  │ (*) CreatedAt           │
+       │                  │ (*) UpdatedAt           │
+       │                  └──────────────────────────┘
+       │                             │
+       │                             │ 1:N
+       │                             │
+       │                             ▼
+       │                  ┌──────────────────────────┐
+       │                  │         Teams            │
+       │                  ├──────────────────────────┤
+       │                  │ [PK] TeamId             │
+       │                  │ [FK] ChallengeId        │
+       │                  │ (*) TeamName            │
+       │                  │ [FK] CaptainUserId ─────┤───── Captain
+       │                  │ (?) TeamImageUrl        │
+       │                  │ (*) IsActive            │
+       │                  │ (*) CreatedAt           │
+       │                  │ (*) UpdatedAt           │
+       │                  └──────────────────────────┘
+       │                             │
+       │                             │
+       │ Health Data                 │
+       │                             │
+       │                             │
+       ▼                             ▼
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                      RELATIONSHIP TABLES (M:N)                            │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────┐           ┌──────────────────────────────────┐
+│      TeamMembers         │           │    ChallengeParticipants         │
+├──────────────────────────┤           ├──────────────────────────────────┤
+│ [PK] TeamMemberId       │           │ [PK] ParticipantId              │
+│ [FK] TeamId             │           │ [FK] ChallengeId                │
+│ [FK] UserId             │           │ [FK] UserId                     │
+│ (*) JoinedAt            │           │ [FK] TeamId (nullable)          │
+│ [FK] AddedBy            │           │ (*) DataSharingConsent          │
+│ (*) IsActive            │           │ (?) ConsentDate                 │
+└──────────────────────────┘           │ (*) JoinedAt                    │
+                                       │ (*) IsActive                    │
+       Links:                          │ (?) LeftAt                      │
+       Users M:N Teams                 │ (*) CreatedAt                   │
+                                       │ (*) UpdatedAt                   │
+                                       └──────────────────────────────────┘
+                                           Links:
+                                           Users M:N Challenges
+                                           Associates Users → Teams → Challenges
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        TIME-SERIES DATA                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────┐
+│      HealthMetrics       │        Raw health data (high volume)
+├──────────────────────────┤
+│ [PK] MetricId (BIGINT)  │
+│ [FK] UserId             │◄───── From Users
+│ (*) MetricDate (DATE)   │        One record per user per day
+│ (*) Steps               │
+│ (*) ActiveMinutes       │        Constraints:
+│ (*) DistanceKilometers  │        - Steps >= 0
+│ (?) Source              │        - ActiveMinutes: 0-1440 (max 24 hrs)
+│ (*) SyncedAt            │        - Distance >= 0
+│ (*) CreatedAt           │        - UNIQUE(UserId, MetricDate)
+└──────────────────────────┘
+       │
+       │ Aggregated Into
+       ▼
+┌──────────────────────────┐
+│     DailySummaries       │        Pre-aggregated per challenge
+├──────────────────────────┤
+│ [PK] SummaryId          │
+│ [FK] ChallengeId        │◄───── Per Challenge
+│ [FK] UserId             │◄───── Per User
+│ (*) SummaryDate         │
+│ (*) Steps               │        Daily values
+│ (*) ActiveMinutes       │
+│ (*) DistanceKilometers  │
+│ (*) CumulativeSteps     │        Running totals
+│ (*) CumulativeActive... │
+│ (*) CumulativeDist...   │
+│ (*) ComputedAt          │
+└──────────────────────────┘
+       │
+       │ Computed Into
+       ▼
+┌──────────────────────────┐
+│      Leaderboards        │        Materialized rankings (cache)
+├──────────────────────────┤
+│ [PK] LeaderboardId      │
+│ [FK] ChallengeId        │
+│ (*) LeaderboardType     │        'Individual' or 'Team'
+│ (*) EntityId            │        UserId or TeamId
+│ (*) Rank                │
+│ (?) PreviousRank        │        For trend arrows
+│ (*) PrimaryScore        │        Based on challenge metric
+│ (*) TotalSteps          │
+│ (*) TotalActiveMinutes  │
+│ (*) TotalDistance...    │
+│ (?) TeamMemberCount     │        Team leaderboards only
+│ (?) TeamAverageSteps    │
+│ (*) ComputedAt          │
+└──────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        SYSTEM TABLES                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────┐
+│        AuditLog          │        Change tracking
+├──────────────────────────┤
+│ [PK] AuditId (BIGINT)   │
+│ (*) EntityType          │        'Challenge', 'Team', 'TeamMember'...
+│ (*) EntityId            │
+│ (*) Action              │        'Create', 'Update', 'Delete', 'Reassign'
+│ [FK] ChangedBy          │◄───── User who made change
+│ (*) ChangedAt           │
+│ (?) OldValues (JSON)    │
+│ (?) NewValues (JSON)    │
+│ (?) ChangeDescription   │
+│ (?) IpAddress           │
+└──────────────────────────┘
+
+┌──────────────────────────┐
+│      Notifications       │        Email/notification queue
+├──────────────────────────┤
+│ [PK] NotificationId     │
+│ [FK] UserId             │◄───── Recipient
+│ (*) NotificationType    │        'ChallengeInvite', 'ChallengeStart'...
+│ (*) Subject             │
+│ (*) Body                │
+│ (*) Status              │        'Pending', 'Sent', 'Failed'
+│ (?) SentAt              │
+│ (?) ErrorMessage        │
+│ (*) RetryCount          │
+│ (*) CreatedAt           │
+└──────────────────────────┘
+
+==============================================================================
+RELATIONSHIP CARDINALITY SUMMARY
+==============================================================================
+
+One-to-Many (1:N):
+  Users (1) ────< HealthMetrics (N)
+  Users (1) ────< Notifications (N)
+  Users (1) ────< AuditLog (N) [ChangedBy]
+
+  Challenges (1) ────< Teams (N)
+  Challenges (1) ────< ChallengeParticipants (N)
+  Challenges (1) ────< DailySummaries (N)
+  Challenges (1) ────< Leaderboards (N)
+
+  Teams (1) ────< TeamMembers (N)
+  Teams (1) ────< ChallengeParticipants (N) [optional]
+
+Many-to-Many (M:N):
+  Users (M) ═══< TeamMembers >═══ Teams (N)
+  Users (M) ═══< ChallengeParticipants >═══ Challenges (N)
+
+Special Relationships:
+  Teams.CaptainUserId → Users (Team captain is a User)
+  Challenges.CreatedBy → Users (Challenge creator is an Admin)
+  TeamMembers.AddedBy → Users (Who added the member)
+
+==============================================================================
+DATA FLOW
+==============================================================================
+
+Challenge Creation Flow:
+  1. Admin creates Challenge
+  2. Challenge moves to 'Signup' status
+  3. Captains create Teams for Challenge
+  4. Users join Teams via TeamMembers
+  5. ChallengeParticipants records created (links User + Challenge + Team)
+  6. Challenge moves to 'Active' status
+
+Health Data Sync Flow:
+  1. Mobile app syncs to HealthMetrics (raw data)
+  2. Background job aggregates into DailySummaries (per challenge)
+  3. Background job computes Leaderboards (cached rankings)
+  4. Frontend displays leaderboard from cached table
+
+Team Management Flow:
+  1. During signup: Captain manages TeamMembers
+  2. After signup: Admin can modify TeamMembers
+  3. All changes logged to AuditLog
+
+==============================================================================
+INDEXES STRATEGY
+==============================================================================
+
+Primary Indexes (Clustered):
+  - All tables have clustered PK on identity column
+
+Foreign Key Indexes:
+  - All foreign keys have non-clustered indexes
+  - Improves JOIN performance
+
+Covering Indexes:
+  - HealthMetrics: (UserId, MetricDate) INCLUDE (Steps, Active, Distance)
+  - Leaderboards: (ChallengeId, Type, Rank)
+  - DailySummaries: (ChallengeId, Date, UserId)
+
+Unique Indexes:
+  - Users: Email (unique)
+  - HealthMetrics: (UserId, MetricDate) (one record per user per day)
+  - TeamMembers: (TeamId, UserId) WHERE IsActive=1 (one active membership)
+  - ChallengeParticipants: (ChallengeId, UserId) WHERE IsActive=1
+
+==============================================================================
+SAMPLE QUERY PATTERNS
+==============================================================================
+
+Get Active Challenge Leaderboard:
+  SELECT Rank, u.DisplayName, l.TotalSteps
+  FROM Leaderboards l
+  JOIN Users u ON l.EntityId = u.UserId
+  WHERE l.ChallengeId = @challengeId
+    AND l.LeaderboardType = 'Individual'
+  ORDER BY l.Rank;
+
+Get User's Current Position:
+  SELECT Rank, PrimaryScore
+  FROM Leaderboards
+  WHERE ChallengeId = @challengeId
+    AND LeaderboardType = 'Individual'
+    AND EntityId = @userId;
+
+Get Team Roster:
+  SELECT u.DisplayName, tm.JoinedAt
+  FROM TeamMembers tm
+  JOIN Users u ON tm.UserId = u.UserId
+  WHERE tm.TeamId = @teamId
+    AND tm.IsActive = 1;
+
+Get User's Daily Steps for Challenge:
+  SELECT MetricDate, Steps, ActiveMinutes
+  FROM HealthMetrics hm
+  JOIN ChallengeParticipants cp ON hm.UserId = cp.UserId
+  WHERE cp.ChallengeId = @challengeId
+    AND hm.UserId = @userId
+    AND hm.MetricDate BETWEEN @startDate AND @endDate
+  ORDER BY hm.MetricDate;
+
+==============================================================================
+END OF ERD
+==============================================================================

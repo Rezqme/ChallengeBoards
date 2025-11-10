@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for testing/staging
+  postgres:
+    image: postgres:16-alpine
+    container_name: challengeboards-db
+    environment:
+      POSTGRES_DB: challengeboards
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/migrations/postgresql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d challengeboards"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # pgAdmin - Web UI for PostgreSQL (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: challengeboards-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@challengeboards.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    driver: local
+  pgadmin-data:
+    driver: local
+
+networks:
+  default:
+    name: challengeboards-network

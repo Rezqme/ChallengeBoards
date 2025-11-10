@@ -1,0 +1,514 @@
+Challenge Boards - Product Requirements Document
+Version: 1.0 Date: November 7, 2025 Status: Initial Planning Document Type: Product Requirements Document (PRD)
+
+Executive Summary
+Challenge Boards is an internal organizational application designed to facilitate health and fitness challenges within a business environment. The platform enables administrators to create and manage step/activity challenges while allowing participants to compete individually or in teams by sharing their health data from Apple Health and Google Fit ecosystems.
+
+1. Project Overview
+1.1 Purpose
+Create an engaging platform for workplace fitness challenges that:
+
+Promotes employee health and wellness
+Builds team camaraderie through friendly competition
+Provides visibility into participation and progress
+Supports flexible challenge formats and durations
+1.2 Scope
+Internal organizational use only (not public-facing)
+Support for iOS (Apple Health) and Android (Google Fit) health data
+Web-based administration and viewing
+Companion mobile app for health data synchronization
+Custom challenge creation and management
+1.3 Success Criteria
+Successfully track and display health metrics from multiple platforms
+Enable smooth challenge signup and team formation process
+Provide real-time leaderboards and progress tracking
+80%+ employee participation in challenges
+Minimal administrative overhead
+2. User Roles & Personas
+2.1 Admin/Manager
+Responsibilities:
+
+Create and configure challenges
+Modify team assignments after signup period
+Access all participant data and metrics
+Generate reports and export data
+Monitor challenge progress and engagement
+User Stories:
+
+As an admin, I want to create a new challenge with custom duration and rules
+As an admin, I want to modify team rosters after the signup period closes
+As an admin, I want to export challenge data to CSV for analysis
+As an admin, I want to view real-time leaderboards across all challenges
+2.2 Team Captain
+Responsibilities:
+
+Submit team name during challenge signup
+Submit initial team roster during signup period
+Rally team participation (informal)
+User Stories:
+
+As a team captain, I want to create a team and invite members during signup
+As a team captain, I want to give my team a creative name
+As a team captain, I want to see my team's progress during the challenge
+2.3 Participant
+Responsibilities:
+
+Opt-in to share health data for challenges
+Sync health data regularly
+View personal and team progress
+Engage with challenge activities
+User Stories:
+
+As a participant, I want to easily connect my Apple Health/Google Fit data
+As a participant, I want to see my daily steps and how I rank
+As a participant, I want to view my team's collective progress
+As a participant, I want to choose whether my data remains visible after challenges end
+3. Core Features & Functionality
+3.1 Health Data Integration
+Metrics Tracked:
+Steps (primary metric)
+Active Minutes (movement/exercise time)
+Distance (miles/kilometers)
+Data Sources:
+Apple Health (iOS) - via HealthKit API
+Google Fit (Android) - via Google Fit REST API
+Data Sync Strategy:
+Phase 1: Manual data entry via web interface
+Phase 2: Automated sync via companion mobile app (.NET MAUI)
+Daily background sync when mobile app is installed
+On-demand sync button in mobile app
+Data Privacy & Persistence:
+Opt-in model: Users explicitly consent per challenge
+All shared data persists indefinitely within the organization
+Data visible to all participants during active challenges
+Optional: Users can opt-in to ongoing visibility (Strava-style public record)
+No external data sharing or public access
+3.2 Challenge Management
+Challenge Types:
+Individual Competitions - Participants compete solo
+Team Competitions - Teams compete for collective goals
+Mixed Competitions - Multiple divisions/classes in same time period
+Challenge Configuration:
+Custom Duration - Admin defines start and end dates
+Flexible Metrics - Choose which metrics count (steps, distance, active minutes)
+Scoring Methods:
+Total accumulation (sum of all values)
+Daily average
+Team average vs. team total (configurable)
+Challenge Lifecycle:
+Setup Phase - Admin creates challenge and opens signup
+Signup Period - Team captains form teams, participants join
+Active Phase - Data syncing and competition active
+Completion Phase - Final results, winner announcement
+Archive Phase - Historical data available for viewing
+3.3 Team Management
+Team Formation:
+During Signup Period:
+
+Team captain creates team
+Captain submits team name
+Captain adds initial roster
+No team size limits (variable)
+After Signup Period:
+
+Only admin/manager can modify teams
+Participants can be reassigned
+Teams can be split or merged
+Team Persistence:
+Teams CAN persist across challenges (optional)
+During signup, captain confirms team reuse or creates new
+Historical team data always preserved
+Team Scoring:
+Configurable per challenge:
+Sum of all member metrics
+Average of all member metrics
+Top N performers count
+Minimum participation threshold
+3.4 Dashboard & Visualization
+Main Dashboard Features:
+Active Challenges Overview
+
+Current standings
+Time remaining
+Personal/team progress bars
+Leaderboards
+
+Individual rankings (with metrics)
+Team rankings (with totals/averages)
+Sortable by different metrics
+Real-time updates
+Progress Charts
+
+Daily step trends (line charts)
+Team comparison (bar charts)
+Individual vs. team average
+Historical performance
+Personal Stats
+
+Daily breakdown
+Weekly summaries
+Personal bests
+Challenge participation history
+Admin Dashboard:
+Participation rates
+Data sync status (who hasn't synced recently)
+Challenge analytics
+Engagement metrics
+3.5 Notifications & Communication
+Email Notifications:
+Challenge invitation
+Challenge start reminder
+Daily/weekly progress updates
+Milestone achievements
+Final results announcement
+Team Notifications (Future):
+Stub API for future expansion
+Support for team messaging
+Challenge announcements
+3.6 Reporting & Data Export
+Built-in Reports:
+Challenge summary report
+Individual participant report
+Team performance report
+Participation and engagement report
+Trend analysis across multiple challenges
+Data Export:
+Export to CSV on demand
+Selectable date ranges
+Include/exclude specific metrics
+Raw data or aggregated summaries
+4. Technical Architecture
+4.1 Technology Stack
+Backend:
+Framework: ASP.NET Core Web API (.NET 8)
+Language: C#
+Authentication: Azure AD or custom JWT-based auth
+API Style: RESTful
+Database:
+Primary: Azure SQL Database
+User accounts and profiles
+Challenge definitions
+Team assignments
+Health metrics (time-series data)
+Cost Tier: Basic ($5/mo) to Standard ($15-50/mo)
+Frontend:
+Framework: React 18+ with TypeScript
+UI Library: Material-UI or Tailwind CSS
+Charts: Recharts or Chart.js
+State Management: React Query + Context API
+Hosting: Azure Static Web Apps or Azure App Service
+Mobile App (Phase 2):
+Framework: .NET MAUI (Multi-platform App UI)
+Language: C#
+Purpose: Health data sync only (minimal UI)
+Platforms: iOS and Android
+Native APIs:
+iOS: HealthKit
+Android: Google Fit API
+Azure Services:
+Azure App Service - Host Web API (Linux or Windows)
+Azure SQL Database - Primary data store
+Azure Functions - Background jobs (data processing, notifications)
+Azure Blob Storage - Export files, backups
+Azure Key Vault - API keys and secrets
+Azure Application Insights - Monitoring and diagnostics
+Azure Communication Services or SendGrid - Email delivery
+4.2 System Architecture
+┌────────────────────────────────────────────────────────┐
+│                    CLIENT LAYER                        │
+├────────────────────┬───────────────────────────────────┤
+│   Web App          │   Mobile App (.NET MAUI)          │
+│   (React)          │   - Health data sync              │
+│   - Dashboard      │   - iOS: HealthKit                │
+│   - Admin tools    │   - Android: Google Fit           │
+│   - Reporting      │                                   │
+└─────────┬──────────┴──────────────┬────────────────────┘
+          │                         │
+          │ HTTPS/REST              │ HTTPS/REST
+          │                         │
+┌─────────▼─────────────────────────▼────────────────────┐
+│            ASP.NET Core Web API (.NET 8)               │
+│                Azure App Service                       │
+├────────────────────────────────────────────────────────┤
+│  - Authentication & Authorization                      │
+│  - Challenge Management API                            │
+│  - Team Management API                                 │
+│  - Health Data Ingestion API                           │
+│  - Reporting API                                       │
+│  - Real-time Leaderboard API                           │
+└─────────┬────────────────┬─────────────────────────────┘
+          │                │
+          │                │
+┌─────────▼─────┐   ┌─────▼──────────┐   ┌──────────────┐
+│  Azure SQL    │   │ Azure Functions│   │ Azure Blob   │
+│   Database    │   │ - Data sync    │   │   Storage    │
+│               │   │ - Notifications│   │ - CSV exports│
+│ - Users       │   │ - Aggregations │   │ - Backups    │
+│ - Challenges  │   │ - Daily jobs   │   │              │
+│ - Teams       │   └────────────────┘   └──────────────┘
+│ - Metrics     │
+│ - History     │
+└───────────────┘
+4.3 Database Schema (High-Level)
+Core Tables:
+Users - User profiles and authentication
+Challenges - Challenge definitions and configuration
+Teams - Team information and membership
+TeamMembers - Many-to-many relationship
+HealthMetrics - Time-series health data
+ChallengeParticipants - Enrollment and consent
+Leaderboards - Cached/computed rankings
+AuditLog - Change tracking
+4.4 Mobile App Strategy
+Phase 1 (MVP):
+Manual data entry via web app
+Validates business logic before mobile investment
+Phase 2 (Mobile Sync):
+Simple companion app using .NET MAUI
+Single button: "Sync Health Data"
+Background daily sync
+Minimal UI (not a full-featured app)
+Distribution:
+iOS: Apple Developer Program (Regular $99/year or Enterprise $299/year)
+Android: Google Play ($25 one-time)
+Recommendation: Enterprise program for internal-only distribution
+5. User Flows
+5.1 Challenge Creation Flow (Admin)
+Admin navigates to "Create Challenge"
+Enters challenge details:
+Name and description
+Start and end dates
+Challenge type (individual/team/mixed)
+Metrics to track (steps, distance, active minutes)
+Scoring method
+Configures team settings (if applicable)
+Opens signup period
+Notifies potential participants via email
+5.2 Team Formation Flow (Captain)
+Captain receives challenge invitation
+Clicks "Create Team" during signup period
+Enters team name
+Searches and adds team members
+Submits team roster
+Team members receive notification to join
+5.3 Participant Join Flow
+Participant receives challenge invitation
+Reviews challenge details
+Opts in to data sharing consent
+Chooses individual or joins team
+(Phase 2) Downloads mobile app and connects health data
+(Phase 1) Receives instructions for manual data entry
+5.4 Daily Sync Flow (Mobile App)
+Mobile app runs background sync (daily at set time)
+App reads HealthKit/Google Fit data
+Authenticates with API
+POSTs new data to health metrics endpoint
+Receives confirmation
+Updates "Last Sync" timestamp in app
+5.5 Leaderboard Viewing Flow
+User logs into web app
+Navigates to active challenge
+Views real-time leaderboard
+Filters by individual/team
+Clicks on entry to see detailed breakdown
+Views charts and trends
+6. Non-Functional Requirements
+6.1 Performance
+Page load time < 2 seconds
+API response time < 500ms (p95)
+Leaderboard updates within 5 minutes of data sync
+Support 100-500 concurrent users
+6.2 Security
+HTTPS only (TLS 1.2+)
+JWT or Azure AD authentication
+Role-based access control (RBAC)
+API rate limiting
+SQL injection prevention (parameterized queries)
+Health data encryption at rest and in transit
+Audit logging for sensitive operations
+6.3 Scalability
+Initial: 50-100 users
+Growth: 500+ users
+Database connection pooling
+Redis caching for leaderboards (optional)
+Azure scaling (vertical and horizontal)
+6.4 Availability
+99% uptime target
+Azure health checks
+Automated backups (daily)
+Disaster recovery plan
+6.5 Usability
+Mobile-responsive web design
+Accessible (WCAG 2.1 Level AA)
+Intuitive navigation
+Minimal clicks to key features
+Clear error messages
+6.6 Compliance
+Internal organizational use (no HIPAA requirement)
+Participants voluntarily share data
+Clear consent mechanism
+Data retention policy documented
+Right to withdraw consent
+7. Development Phases
+Phase 1: MVP (Weeks 1-4)
+Goal: Validate concept with manual data entry
+
+Deliverables:
+
+ASP.NET Core Web API (basic endpoints)
+Azure SQL Database setup
+React frontend with:
+User authentication
+Challenge creation (admin)
+Team formation
+Manual data entry form
+Simple leaderboard
+Email notifications (basic)
+Deployed to Azure
+Success Metrics:
+
+Run one test challenge with team
+Gather feedback on UX
+Validate data model
+Phase 2: Mobile Sync (Weeks 5-8)
+Goal: Automate health data sync
+
+Deliverables:
+
+.NET MAUI companion app
+HealthKit integration (iOS)
+Google Fit integration (Android)
+Background sync functionality
+Enhanced API endpoints for bulk data ingestion
+App deployment (TestFlight, Google Play Internal Testing)
+Success Metrics:
+
+90%+ successful sync rate
+Daily automated updates
+Reduced manual entry burden
+Phase 3: Enhanced Features (Weeks 9-12)
+Goal: Polish and engagement features
+
+Deliverables:
+
+Advanced charting and visualization
+Admin dashboard with analytics
+CSV export functionality
+Multiple concurrent challenges
+Achievement/milestone system
+Improved notifications (summaries, digests)
+Phase 4: Optimization (Weeks 13+)
+Goal: Performance and scale
+
+Deliverables:
+
+Redis caching
+Performance optimization
+Enhanced reporting
+Multi-tenant support (if needed)
+Advanced team features
+8. Cost Analysis
+8.1 Development Costs
+Developer Time: Primary cost (internal or contracted)
+Apple Developer Program: $99/year (regular) or $299/year (enterprise)
+Google Play Store: $25 one-time fee
+8.2 Azure Infrastructure (Monthly)
+Small Scale (< 100 users):
+Azure App Service (Basic B1): ~$13
+Azure SQL Database (Basic): ~$5
+Azure Functions (Consumption): ~$0-5
+Azure Storage: ~$1
+Azure Application Insights: ~$0-5
+SendGrid/Email: ~$0-10
+Total: ~$25-40/month
+Medium Scale (100-500 users):
+Azure App Service (Standard S1): ~$70
+Azure SQL Database (Standard S0): ~$15
+Azure Functions: ~$5-10
+Azure Storage: ~$5
+Azure Application Insights: ~$10
+SendGrid/Email: ~$10-20
+Total: ~$115-130/month
+8.3 Annual Cost Summary
+Year 1:
+
+Development: Variable (internal)
+Apple Developer: $299 (enterprise)
+Google Play: $25
+Azure (annual): ~$300-1,560
+Total recurring: ~$625-1,885
+Ongoing (Annual):
+
+Apple Developer: $299
+Azure: ~$300-1,560
+Total: ~$600-1,860/year
+8.4 Alternative: Third-Party Health API
+Terra API: ~$600-1,200/year
+Pros: Faster implementation, no mobile app development
+Cons: Higher ongoing cost, vendor dependency
+9. Risks & Mitigations
+9.1 Technical Risks
+| Risk | Impact | Probability | Mitigation | |------|--------|-------------|------------| | HealthKit/Google Fit API changes | High | Medium | Versioned APIs, monitoring for deprecations | | Data sync reliability issues | High | Medium | Retry logic, manual fallback, status monitoring | | Azure service outages | Medium | Low | Health checks, status page, backup region | | Mobile app rejection (App Store) | Medium | Low | Use Enterprise program, thorough testing | | Database performance at scale | Medium | Medium | Proper indexing, query optimization, caching |
+
+9.2 Business Risks
+| Risk | Impact | Probability | Mitigation | |------|--------|-------------|------------| | Low user adoption | High | Medium | Phased rollout, gather feedback, improve UX | | Privacy concerns | Medium | Low | Clear consent, transparent data use, internal only | | Maintenance burden | Medium | Medium | Good documentation, automated tests, monitoring | | Budget overruns | Medium | Low | Cloud cost monitoring, alerts, tier management |
+
+9.3 User Adoption Risks
+| Risk | Impact | Probability | Mitigation | |------|--------|-------------|------------| | Users don't download mobile app | High | Medium | Start with manual entry, make app optional | | Data sync confusion | Medium | Medium | Clear instructions, onboarding flow, support docs | | Challenge fatigue | Medium | Medium | Vary challenge types, appropriate frequency | | Uneven team distribution | Low | High | Admin tools to rebalance, draft system |
+
+10. Future Enhancements
+10.1 Near-Term (6-12 months)
+Integration with Fitbit, Garmin, Strava
+Social features (comments, reactions, kudos)
+Advanced achievement/badge system
+Challenge templates
+Mobile app improvements (push notifications)
+Team messaging
+Photo sharing (proof of activities)
+10.2 Long-Term (12+ months)
+AI-powered insights and recommendations
+Predictive analytics
+Custom challenge types (cycling, swimming, etc.)
+Integration with workplace wellness programs
+Gamification elements (levels, power-ups)
+Multi-organization support (white-label)
+Native video content (workout challenges)
+Integration with calendar for scheduling
+11. Success Metrics & KPIs
+11.1 Engagement Metrics
+Challenge participation rate (target: 80%+)
+Active daily users during challenges
+Data sync frequency (target: 90%+ daily sync)
+Challenge completion rate
+Repeat participation rate
+11.2 Technical Metrics
+API uptime (target: 99%+)
+Average API response time (target: < 500ms)
+Successful sync rate (target: 95%+)
+Mobile app crash rate (target: < 1%)
+Database query performance
+11.3 Business Metrics
+Infrastructure cost per user
+User satisfaction score
+Time to complete administrative tasks
+Support ticket volume
+12. Appendices
+12.1 Glossary
+Active Minutes: Time spent in physical activity (walking, running, exercise)
+HealthKit: Apple's framework for health and fitness data on iOS
+Google Fit: Google's platform for health and fitness data on Android
+Leaderboard: Ranked list of participants or teams by performance
+Sync: Process of transferring health data from mobile device to server
+.NET MAUI: Microsoft's Multi-platform App UI framework
+12.2 References
+Apple HealthKit Documentation: https://developer.apple.com/health-fitness/
+Google Fit REST API: https://developers.google.com/fit
+Azure Documentation: https://docs.microsoft.com/azure/
+.NET MAUI Documentation: https://docs.microsoft.com/dotnet/maui/
+12.3 Revision History
+| Version | Date | Author | Changes | |---------|------|--------|---------| | 1.0 | 2025-11-07 | Initial | Initial PRD creation |
+
+13. Approval & Sign-off
+Document Owner: [Name] Stakeholders: [Names] Approved By: [Name] Date: [Date]
+
+END OF DOCUMENT
